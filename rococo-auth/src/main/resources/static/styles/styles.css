@@ -157,9 +157,9 @@ textarea:-webkit-autofill:focus,
 select:-webkit-autofill,
 select:-webkit-autofill:hover,
 select:-webkit-autofill:focus,
-input:-internal-autofill-selected {
+input:autofill {
     outline: rgb(var(--color-primary-500) / 0.85) solid 1px;
-    background-color: rgb(var(--color-surface-700));
+    background-color: rgb(var(--color-surface-700)) !important;
     border: none;
 }
 

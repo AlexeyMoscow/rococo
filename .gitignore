@@ -27,3 +27,5 @@ bin/
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
+/.kotlin/sessions/kotlin-compiler-13373544416336964067.salive
+/cookies.txt

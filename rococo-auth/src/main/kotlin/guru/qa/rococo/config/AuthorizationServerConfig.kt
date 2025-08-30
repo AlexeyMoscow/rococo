@@ -48,7 +48,7 @@ class AuthorizationServerConfig {
 
     @Bean
     fun authorizationServerSettings(): AuthorizationServerSettings =
-        AuthorizationServerSettings.builder().build()
+        AuthorizationServerSettings.builder().issuer("http://localhost:9000").build()
 
     @Bean
     fun registeredClientRepository(passwordEncoder: org.springframework.security.crypto.password.PasswordEncoder): RegisteredClientRepository {

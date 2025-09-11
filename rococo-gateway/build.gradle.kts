@@ -16,6 +16,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server") // ← добавили
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    implementation("org.springframework.data:spring-data-commons")
 
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
 

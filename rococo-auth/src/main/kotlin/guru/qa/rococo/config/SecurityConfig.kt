@@ -34,7 +34,8 @@ class SecurityConfig(
         http
             .authorizeHttpRequests { auth ->
                 auth
-                    .requestMatchers("/login", "/register", "/css/**", "/js/**", "/styles/**", "/images/**", "/favicon.ico").permitAll()
+                    .requestMatchers("/.well-known/**").permitAll()
+                    .requestMatchers("/login","/error", "/register", "/css/**", "/js/**", "/styles/**", "/images/**", "/favicon.ico").permitAll()
                     .anyRequest().authenticated()
             }
             .formLogin { it.loginPage("/login").permitAll() }

@@ -6,74 +6,79 @@ import com.nimbusds.jose.jwk.source.JWKSource
 import com.nimbusds.jose.proc.SecurityContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.security.config.Customizer
+import org.springframework.core.annotation.Order
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.oauth2.core.AuthorizationGrantType
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod
+import org.springframework.security.oauth2.core.oidc.OidcScopes
 import org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository
+import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings
-import org.springframework.security.oauth2.server.authorization.settings.TokenSettings
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint
+import org.springframework.web.cors.CorsConfiguration
+import org.springframework.web.cors.CorsConfigurationSource
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 import java.security.KeyPair
 import java.security.KeyPairGenerator
-import java.time.Duration
 import java.util.*
 
 @Configuration
 class AuthorizationServerConfig {
 
     @Bean
+    @Order(1)
     fun authorizationServerSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
-        val asConfigurer = OAuth2AuthorizationServerConfigurer.authorizationServer()
-        val endpoints = asConfigurer.endpointsMatcher
-
-        return http
-
-            .securityMatcher(endpoints)
-
-            .with(asConfigurer) { it.oidc(Customizer.withDefaults()) }
-
-            .exceptionHandling { it.authenticationEntryPoint(LoginUrlAuthenticationEntryPoint("/login")) }
-
-            .oauth2ResourceServer { oauth2 ->
-                oauth2.jwt(Customizer.withDefaults())
-            }
-            .build()
+        OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http)
+        http.getConfigurer(OAuth2AuthorizationServerConfigurer::class.java).oidc { }
+        http.cors { } // CORS для /oauth2/** и /.well-known/**
+        http.exceptionHandling { it.authenticationEntryPoint(LoginUrlAuthenticationEntryPoint("/login")) }
+        return http.build()
     }
 
     @Bean
     fun authorizationServerSettings(): AuthorizationServerSettings =
-        AuthorizationServerSettings.builder().issuer("http://localhost:9000").build()
+        AuthorizationServerSettings.builder().issuer("http://127.0.0.1:9000").build()
 
     @Bean
-    fun registeredClientRepository(passwordEncoder: org.springframework.security.crypto.password.PasswordEncoder): RegisteredClientRepository {
-        val registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())
-            .clientId("rococo-client")
-            .clientSecret(passwordEncoder.encode("secret"))
-            .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-            .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-            .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-            .redirectUri("https://oauth.pstmn.io/v1/callback")
-            .redirectUri("http://127.0.0.1:8080/login/oauth2/code/rococo-client")
-            .scope("openid")
+    fun registeredClientRepository(pe: PasswordEncoder): RegisteredClientRepository {
+        val spa = RegisteredClient.withId(UUID.randomUUID().toString())
+            .clientId("client")
+            .clientAuthenticationMethods { m -> m.clear(); m.add(ClientAuthenticationMethod.NONE) } // public SPA
+            .authorizationGrantTypes { g -> g.clear(); g.add(AuthorizationGrantType.AUTHORIZATION_CODE) }
+            .redirectUri("http://127.0.0.1:3000/authorized")   // добавь РОВНО тот, что в URL
+            .postLogoutRedirectUri("http://127.0.0.1:3000")
+            .scope(OidcScopes.OPENID)
             .scope("profile")
-            .scope("read")
-            .clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).build())
-            .tokenSettings(
-                TokenSettings.builder()
-                    .accessTokenTimeToLive(Duration.ofMinutes(30))
-                    .refreshTokenTimeToLive(Duration.ofDays(30))
-                    .reuseRefreshTokens(false)
-                    .build()
-            )
+            .clientSettings(ClientSettings.builder().requireProofKey(true).build()) // PKCE
             .build()
 
-        return InMemoryRegisteredClientRepository(registeredClient)
+        val postman = RegisteredClient.withId(UUID.randomUUID().toString())
+            .clientId("rococo-client")
+            .clientSecret(pe.encode("secret"))
+            .clientAuthenticationMethods { m -> m.clear(); m.add(ClientAuthenticationMethod.CLIENT_SECRET_BASIC) }
+            .authorizationGrantTypes { g -> g.clear(); g.add(AuthorizationGrantType.AUTHORIZATION_CODE); g.add(AuthorizationGrantType.REFRESH_TOKEN) }
+            .redirectUri("https://oauth.pstmn.io/v1/callback")
+            .scope(OidcScopes.OPENID).scope("profile")
+            .build()
+
+        return InMemoryRegisteredClientRepository(listOf(spa, postman))
+    }
+
+    @Bean
+    fun corsConfigurationSource(): CorsConfigurationSource {
+        val c = CorsConfiguration().apply {
+            allowedOrigins = listOf("http://127.0.0.1:3000", "http://localhost:3000")
+            allowedMethods = listOf("GET","POST","OPTIONS")
+            allowedHeaders = listOf("*")
+            allowCredentials = true
+        }
+        return UrlBasedCorsConfigurationSource().apply { registerCorsConfiguration("/**", c) }
     }
 
     @Bean

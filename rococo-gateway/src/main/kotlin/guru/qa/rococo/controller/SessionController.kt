@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RestController
 
 data class SessionJson(
     val authenticated: Boolean,
-    val userName: String? = null
+    val username: String? = null
 )
 
 @RestController
@@ -21,10 +21,10 @@ class SessionController {
         // Откуда взять имя:
         // - OpenID ID Token часто кладёт preferred_username
         // - Иначе sub, а в крайнем случае subject
-        val userName = (jwt.getClaimAsString("preferred_username"))
+        val username = (jwt.getClaimAsString("preferred_username"))
             ?: jwt.getClaimAsString("sub")
             ?: jwt.subject
 
-        return SessionJson(authenticated = true, userName = userName)
+        return SessionJson(authenticated = true, username = username)
     }
 }

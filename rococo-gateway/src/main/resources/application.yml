@@ -9,13 +9,17 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:9000
+          issuer-uri: http://127.0.0.1:9000
 
 gateway:
   cors:
     allowed-origins:
       - http://127.0.0.1:3000
 
+logging:
+  level:
+    org.springframework.security: DEBUG
+    org.springframework.security.oauth2: DEBUG
 #  graphql:
 #    graphiql:
 #      enabled: true

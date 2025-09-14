@@ -2,7 +2,6 @@ package guru.qa.rococo.controller
 
 import guru.qa.rococo.service.RegistrationModel
 import guru.qa.rococo.service.UserService
-import jakarta.validation.Valid
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.validation.BindingResult
@@ -24,7 +23,7 @@ class RegisterController(
 
     @PostMapping("/register")
     fun register(
-        @ModelAttribute("registrationModel") @Valid form: RegistrationModel,
+        @ModelAttribute("registrationModel") form: RegistrationModel,
         bindingResult: BindingResult,
         model: Model
     ): String {

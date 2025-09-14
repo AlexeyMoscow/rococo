@@ -13,19 +13,20 @@ export const authClient = {
         if (!response.ok) {
             throw new Error("Failed loading data");
         }
-        return response.json();
-    },
-    logout: async() => {
-        const response = await fetch(`${BASE_URL}/logout`, {
-            method: "GET",
-            credentials: "include",
-            headers: {
-                "Content-type": "application/json",
-                "Authorization": `Bearer ${localStorage.getItem("id_token")}`,
+        
+        const token = await response.json();
+        try {
+            if (token && typeof token === 'object') {
+                if (token.id_token) localStorage.setItem('id_token', token.id_token);
+                if (token.access_token) localStorage.setItem('access_token', token.access_token);
             }
-        });
-        if (!response.ok) {
-            throw new Error("Failed logout");
-        }
+        } catch (_) {}
+        return token;
+        
+    },
+    logout: async () => {
+        const response = await fetch(`${BASE_URL}/logout`, { method: "GET", credentials: "include" });
+        if (!response.ok) { throw new Error("Failed loading data"); }
+        try { localStorage.removeItem("id_token"); localStorage.removeItem("access_token"); } catch (_) {}
     }
 }
